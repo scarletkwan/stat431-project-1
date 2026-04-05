@@ -1,0 +1,33 @@
+---
+title: "project one checkpoint 1"
+format: html
+editor: visual
+---
+
+## Measles data set
+
+The context of the data:
+
+This provisional monthly measles and rubella data set was published by the World Health Organization on June 12th, 2025. This data includes country level and regional level data on clinically-compatible, epidemiologically linked and laboratory-confirmed cases. Measles is a threat across the world, and an outbreak in the USA has been the subject of a lot of media coverage in the past few months.
+
+What cleaning has been done to the data:
+
+The variable names were cleaned to make them consistent, and a lot of variables are converted into a numeric variable when necessary. Variables were also renamed to make the data set easier to understand. Unnecessary rows were also removed, and missing values were set to make sure that the data could be read easily.
+
+**At least two** research questions that could be addressed with these data:
+
+-   How have global measles cases changed over time?
+
+-   Which regions or countries consistently report the highest measles burden?
+
+**At least two** research questions that could be addressed using supplemental data:
+
+-   Is measles more or less prominent in high population areas? (Using frequencies of measles cases and population densities of certain regions)
+
+-   Does average temperature or other environmental factors affect the number of measles cases in that environment? (using average temperature, humidity, etc to compare whether measles is more or less common in that environment)
+
+Sketches out two visualizations that could be made to address the research questions you posed above
+
+![](images/stat 334.jpeg){width="420"}
+
+![](images/stat 335.jpeg){width="569"}
