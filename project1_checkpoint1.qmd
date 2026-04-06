@@ -2,6 +2,7 @@
 title: "project one checkpoint 1"
 format: html
 editor: visual
+embed-resources: true
 ---
 
 ## Measles data set
@@ -28,6 +29,6 @@ The variable names were cleaned to make them consistent, and a lot of variables 
 
 Sketches out two visualizations that could be made to address the research questions you posed above
 
-![](images/stat 334.jpeg){width="420"}
+![](images/stat%20334.jpeg){width="420"}
 
-![](images/stat 335.jpeg){width="569"}
+![](images/stat%20335.jpeg){width="569"}

@@ -2,6 +2,7 @@
 title: "Project 1 Checkpoint 2"
 format: html
 editor: visual
+embed-resources: true
 ---
 
 ## Quarto
