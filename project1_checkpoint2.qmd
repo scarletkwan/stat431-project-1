@@ -1,27 +1,66 @@
 ---
 title: "Project 1 Checkpoint 2"
-format: html
-editor: visual
-embed-resources: true
+author: "Scarlet Kwan"
+format:
+  html: 
+    theme: darkly
+    code-fold: show
+    code-tools: true
+    embed-resources: true
+editor: source
+execute: 
+  eval: true
+  echo: true
+  warning: false
 ---
 
-## Quarto
+## Data Summaries Unmodified
 
-Quarto enables you to weave together content and executable code into a finished document. To learn more about Quarto see <https://quarto.org>.
-
-## Running Code
-
-When you click the **Render** button a document will be generated that includes both content and the output of embedded code. You can embed code like this:
-
+<<<<<<< HEAD
 ```{r}
-1 + 1
+#| output: false
+democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
 ```
 
-You can add options to executable code like this
+**Research Questions Based on Democracy Data:**
 
+- Are presidential systems more likely to be democratic?
+ 
 ```{r}
-#| echo: false
-2 * 2
+democracy_presid_voting <- function(df) {
+  df |>
+    group_by(is_presidential) |>
+    summarize(
+      prop_democracy = mean(is_democracy, na.rm = TRUE),
+      count = n()) |>
+    arrange(desc(prop_democracy))
+}
+
+democracy_presid_voting(democracy_data)
 ```
 
-The `echo: false` option disables the printing of code (only output is displayed).
+-   Does the inclusion of proportional voting increase the possibility of a free and fair election?
+
+```{r}
+library(dplyr)
+library(purrr)
+
+prop_vs_fair_map <- democracy_data |>
+  split(~has_proportional_voting) |>
+  map_dbl(~ mean(.x$has_free_and_fair_election, na.rm = TRUE))
+
+```
+
+
+```{r}
+library(tibble)
+
+prop_vs_fair <- prop_vs_fair_map |>
+  enframe(name = "proportional voting", value = "prop of free & fair")|> gt::gt()
+
+prop_vs_fair
+```
+
+## Data Summaries Modified
+
+Description
