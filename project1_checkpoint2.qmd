@@ -19,6 +19,8 @@ execute:
 <<<<<<< HEAD
 ```{r}
 #| output: false
+library(tidyverse)
+
 democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
 ```
 
@@ -42,9 +44,6 @@ democracy_presid_voting(democracy_data)
 -   Does the inclusion of proportional voting increase the possibility of a free and fair election?
 
 ```{r}
-library(dplyr)
-library(purrr)
-
 prop_vs_fair_map <- democracy_data |>
   split(~has_proportional_voting) |>
   map_dbl(~ mean(.x$has_free_and_fair_election, na.rm = TRUE))
