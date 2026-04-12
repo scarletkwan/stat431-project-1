@@ -153,4 +153,5 @@ colony_summary |>
     columns = proportion_of_colonies,
     decimals = 2
   )
+
 ```
