@@ -14,15 +14,16 @@ execute:
   warning: false
 ---
 
-## Data Summaries Unmodified
-
-<<<<<<< HEAD
 ```{r}
-#| output: false
-library(tidyverse)
 
 democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
+library(tidyverse)
+library(gt)
+
 ```
+
+
+## Data Summaries Unmodified
 
 **Research Questions Based on Democracy Data:**
 
@@ -60,6 +61,96 @@ prop_vs_fair <- prop_vs_fair_map |>
 prop_vs_fair
 ```
 
+
+
 ## Data Summaries Modified
 
-Description
+- How many female president or monarch leaders have led a country over time?
+
+
+```{r}
+#custom function w/ new column
+
+summarize_female_leadership <- function(data) {
+   data |>
+    mutate(
+      female_leader = is_female_monarch == TRUE | is_female_president == TRUE
+    ) |>
+    group_by(year) |>
+    summarize(
+      number_of_countries_per_year = n(),
+      female_leaders = sum(female_leader, na.rm = TRUE),
+      proportion_female = female_leaders / number_of_countries_per_year
+    )
+}
+```
+
+```{r}
+#using the function + gt table
+summarize_female_leadership(democracy_data) |>
+  gt() |>
+  tab_header(
+    title = "Female Leadership Over Time",
+    subtitle = "Proportion of Female Leaders by Year"
+  ) |>
+  cols_label(
+    year = "Year",
+    number_of_countries_per_year = "Total Countries In A Year",
+    female_leaders = "Female Leaders",
+    proportion_female = "Proportion Female"
+  ) |>
+  fmt_percent(
+    columns = proportion_female,
+    decimals = 2
+  )
+```
+
+
+
+- How many colonies are present over time?
+
+```{r}
+democracy_data <- democracy_data |>
+  mutate(
+    colony_status = if_else(is_colony == TRUE, "Colony", "Not Colony")
+  )
+```
+ 
+```{r}
+# this function filters the number of colunies in a specific inputted year
+num_colonies <- function(y) {
+  democracy_data |>
+    filter(year == y, colony_status == "Colony") |>
+    nrow()
+}
+```
+
+
+```{r}
+#using the above functions, we are able to map the variable number_of_colonies for each year
+colony_summary <- democracy_data |>
+  distinct(year) |>
+  arrange(year) |>
+  mutate(
+    number_of_colonies = map_int(year, num_colonies),
+    proportion_of_colonies = number_of_colonies / 208
+  )
+
+#gt table here
+
+colony_summary |>
+  gt() |>
+  tab_header(
+    title = "Chnage In Number of Colonies by Year",
+    subtitle = "208 Countries In Our Dataset") |>
+  cols_label(
+    year = "Year",
+    number_of_colonies = "Number of Colonies",
+    proportion_of_colonies = "Proportion of Countries That Are Colonies",
+    
+  ) |>
+  fmt_percent(
+    columns = proportion_of_colonies,
+    decimals = 2
+  )
+```
