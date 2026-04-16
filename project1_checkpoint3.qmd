@@ -1,0 +1,44 @@
+---
+title: "Project 1- checkpoint 3"
+author: "Addie Weaver, Scarlet Kwan, Sophia Woodward"
+format: html
+editor: source
+embed-resources: true
+code-tools: true
+execute: 
+  echo: true
+  warning: false
+  message: false
+---
+
+```{r}
+#| label: load in data and packages
+
+democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
+library(tidyverse)
+library(gt)
+```
+
+## Data Sources
+
+### #1
+
+```{r}
+
+```
+
+Descript Here
+
+### #2
+
+```{r}
+
+```
+
+Descript Here
+
+## Data Summaries
+
+### #1
+
+### #2
