@@ -10,13 +10,18 @@ execute:
   warning: false
   message: false
 ---
-
 ```{r}
-#| label: load in data and packages
+#| label: install-packages-and-read-in-data
+#| message: false 
 
-democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
 library(tidyverse)
 library(gt)
+library(glue)
+library(httr)
+library(tidyjson)
+library(jsonlite)
+democracy_data <- readr::read_csv('https://raw.githubusercontent.com/rfordatascience/tidytuesday/main/data/2024/2024-11-05/democracy_data.csv')
+
 ```
 
 ## Data Sources
@@ -24,21 +29,180 @@ library(gt)
 ### #1
 
 ```{r}
+api_key <- "bBv48CNNcVrUX1b43G8XxjlVQE1nYi4MMkM8OKfR" 
+# link to this data set https://api-ninjas.com/api/gdp
+
+get_gdp <- function(country, key = api_key)
+  {
+  
+  url <- glue("https://api.api-ninjas.com/v1/gdp?country={country};X-Api-Key={api_key}")
+  my_data <- safely(fromJSON)(url)
+  
+  res <- my_data$result
+  
+  #had to change it to length & null cause i kept getting one or the other
+   if (is.null(res) || length(res) == 0) {
+    return(tibble(
+      country_code = character(),
+      year = integer(),
+      gdp = double()
+    ))
+  } else {
+    return( #made a tibble for the 3 pieces of data I got from the api
+      as_tibble(res) |>
+        select(country, year, gdp_nominal) |>
+        mutate(
+          country_code = country,
+          year = as.integer(year),
+          gdp = as.numeric(gdp_nominal)
+        ) |>
+        select(country_code, year, gdp)
+    )
+  }
+}
 
 ```
 
-Descript Here
+## Data Joins Democracy & GDP For DataSet 1
+```{r}
+#vector of the country_codes
+# get unique country codes only
+country_codes <- democracy_data |>
+  distinct(country_code) |>
+  pull(country_code)
+
+# pull GDP data for all available countries
+gdp_df <- country_codes |>
+  map(get_gdp) |>
+  bind_rows()
+
+#gdp_df
+
+democracy_gdp <- democracy_data |>
+  mutate(
+    female_leader = is_female_monarch == TRUE | is_female_president == TRUE
+  ) |>
+  left_join(gdp_df, by = c("country_code", "year"))
+
+democracy_gdp
+
+```
+
+The new data set we added is from a GDP API based on country and year. To add this to our overall data set we joined it by country and year. The variables added were GDP for each country.
+
+What we plan to do with this data is look into which female led countries have the highest GDP.
 
 ### #2
 
 ```{r}
+get_unemployment <- function(country, key = api_key)
+{
+  
+  url <- glue("https://api.api-ninjas.com/v1/unemployment?country={country};X-Api-Key={key}")
+  my_data <- safely(fromJSON)(url)
+  
+  res <- my_data$result
+  
+  if (is.null(res) || length(res) == 0) {
+    return(tibble(
+      country_code = character(),
+      year = integer(),
+      unemployment_rate = double()
+    ))
+  } else {
+    return(
+      as_tibble(res) |> #made a tibble using the 3 piences of data from api
+        select(country, year, unemployment_rate) |>
+        mutate(
+          country_code = country,
+          year = as.integer(year),
+          unemployment_rate = as.numeric(unemployment_rate)
+        ) |>
+        select(country_code, year, unemployment_rate)
+    )
+  }
+}
 
 ```
+## Data Joins Democracy & Unenployment For DataSet 2
+```{r}
+#| label: mapping-unemployment-data
 
-Descript Here
+country_codes <- democracy_data |>
+  distinct(country_code) |>
+  pull(country_code)
+
+
+unemp_df <- country_codes |>
+  map(get_unemployment) |>
+  bind_rows()
+```
+
+
+```{r}
+#| label: join-enemployment-data-and-unemployment-data
+
+democracy_unemp <- democracy_data |>
+  inner_join(unemp_df, by = c("country_code", "year"))
+
+democracy_unemp
+```
+
+
+This new data includes our previously joined democracy and GDP data. We added an unemployment rate API data set and used joins to make a new data set, joining it by country and year. By doing so, we added the variable unemployment for each country and year, which we could now use to see if there is a relationship between unemployment rate and other variables in our previously combined data set. We chose to see if the type of regime a country/region has an effect on their unemployment rate.
 
 ## Data Summaries
 
-### #1
+### Research Question: GDP For Top Countries With Most Female Leaders Over Time
 
-### #2
+```{r}
+top_10_female_leaders_gdp <- democracy_gdp |>
+  filter(!is.na(gdp)) |>
+  group_by(country_name, country_code) |>
+  summarize(
+    avg_gdp = mean(gdp),
+    n_female_leaders = sum(female_leader, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  slice_max(n_female_leaders, n = 10, with_ties = FALSE)
+
+top_10_female_leaders_gdp
+#Table of Top Female Leaders with their GDP
+gt::gt(top_10_female_leaders_gdp) |>
+  cols_label(
+  country_name = "Country Name",
+  country_code = "Country Code",
+  avg_gdp = "Average GDP",
+  n_female_leaders ="Number of Female Leaders")|>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |> tab_header(
+      title = md("Top Countries with Female Leaders Average GDP")
+    )
+
+```
+
+#This plot is a Visualization of the information in the table above.
+
+
+### #2 Research Question: Does the type of regime of a country/region affect the unemployment rate?
+```{r}
+#| label: visualization-to-answer-research question
+
+
+unemploy_data <- democracy_unemp |>
+  inner_join(gdp_df, by = c("country_code", "year"), relationship = "many-to-many") |>
+  filter( year == "2019",
+          !is.na(regime_category_index)) 
+
+ggplot(unemploy_data,
+       aes(x = regime_category, y = unemployment_rate)) +
+  geom_boxplot() +  
+  labs(title = "Political Regime Type and Unemployment Rate Across Countries (2019)",
+       x = "Regime Category", 
+       y = "Unemployment Rate") +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+#The boxplot above shows us that the unemployment rate looks pretty similar among different regime categories, with similar medians and IQR.
