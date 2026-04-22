@@ -184,7 +184,15 @@ gt::gt(top_10_female_leaders_gdp) |>
 ```
 
 #This plot is a Visualization of the information in the table above.
-
+```{r}
+ggplot(top_10_female_leaders_gdp, aes(x = n_female_leaders, y = avg_gdp))+
+  geom_point(position = position_jitter(width = 0.2, seed = 123))+
+  geom_line(position = position_jitter(width = 0.2, seed = 123))+
+  labs(title = "Top Countries with Female Leaders Average GDP", 
+       x="Total Number of Female Leaders", 
+       y= "Average GDP")+
+  theme_minimal()
+```
 
 ### #2 Research Question: Does the type of regime of a country/region affect the unemployment rate?
 ```{r}
