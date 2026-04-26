@@ -106,7 +106,6 @@ Although the estimated coefficient for female leadership is positive, and 5.38 f
 ## Data Summaries
 
 ### Research Question: GDP For Top Countries With Most Female Leaders Over Time
-
 ```{r}
 top_10_female_leaders_gdp <- democracy_gdp |>
   filter(!is.na(gdp)) |>
@@ -133,6 +132,20 @@ gt::gt(top_10_female_leaders_gdp) |>
       title = md("Top Countries with Female Leaders Average GDP")
     )
 
+
+ggplot(top_10_female_leaders_gdp, 
+       aes(x = n_female_leaders, y = log(avg_gdp))) +
+  geom_point(position = position_jitter(width = 0.2, seed = 123)) +
+  geom_smooth(method = "lm", se = TRUE, color = "#9AC0CD", fill="#E0FFFF") + 
+  labs(
+    title = "Top Countries with Female Leaders Average GDP",
+    x = "Total Number of Female Leaders",
+    y = "Log of Average GDP"
+  ) +
+  theme_minimal()
+
+
+
 ```
 
 #This plot is a Visualization of the information in the table above.
@@ -145,6 +158,8 @@ ggplot(top_10_female_leaders_gdp, aes(x = n_female_leaders, y = avg_gdp))+
        y= "Average GDP")+
   theme_minimal()
 ```
+
+
 
 ### #2 Research Question: Does the type of regime of a country/region affect the unemployment rate?
 ```{r}
