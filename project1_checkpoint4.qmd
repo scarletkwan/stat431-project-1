@@ -1,0 +1,170 @@
+---
+title: "Project 1- checkpoint 4"
+author: "Addie Weaver, Scarlet Kwan, Sophia Woodward"
+format: html
+editor: source
+embed-resources: true
+code-tools: true
+execute: 
+  echo: true
+  warning: false
+  message: false
+---
+```{r}
+#| label: install-packages-and-read-in-data
+#| message: false 
+
+library(tidyverse)
+library(glue)
+library(httr)
+library(gt)
+library(broom)
+library(tibble)
+gdp_df<- read_csv("gdp_df.csv")
+democracy_unemp <- read_csv("democracy_and_unemploy.csv")
+democracy_gdp <- read_csv("democracy_and_gdp.csv")
+
+
+```
+
+```{r}
+model_gdp_log <- lm(log(gdp) ~ female_leader, data = democracy_gdp)
+
+#When trying to professionally format my output for the model, I did some research into broom package & linear model output
+
+# https://broom.tidymodels.org/articles/broom.html & https://r-graph-gallery.com/366-regression-models-with-gtsummary.html 
+
+#below I used broom's tidy function for making tidy tibbles & broom's glance function to get additional terms from the output
+
+
+# getting the coeefficients, t-statitics, p-value, standard deviation and rounding them
+tidy_model <- tidy(model_gdp_log) |>
+  mutate(term = recode(term,
+      "(Intercept)" = "Intercept",
+      "female_leaderTRUE" = "Female Leader"),
+      estimate = round(estimate, 3),
+      std.error = round(std.error, 3),
+      statistic = round(statistic, 3),
+      p.value = round(p.value, 3),
+      section = "Coefficients") 
+
+# other results through glance
+g <- glance(model_gdp_log)
+
+#tibble of glanced values
+model_stats <- tibble(
+  section = "Model Fit",
+  term = c("R-squared", "Adjusted R-squared", "F-statistic", "Model p-value", "Observations"),
+  estimate = c(
+    round(g$r.squared, 3),
+    round(g$adj.r.squared, 3),
+    round(g$statistic, 3),
+    round(g$p.value, 3),
+    g$nobs
+  ), #setting NA values for this section of the output so its not misleading
+  std.error = NA,
+  statistic = NA,
+  p.value = NA
+)
+
+# Combining both parts
+table_data <- bind_rows(tidy_model, model_stats)
+
+# Building gt table
+gt_table <- table_data |>
+  gt(rowname_col = "term",
+    groupname_col = "section",
+    caption = "Effect of Female Leadership on Logged GDP"
+  ) |>
+  tab_header( #Headers
+    title = md("**Regression Results**"),
+    subtitle = "Response variable: log(GDP)"
+  ) |>
+  cols_label( #labeling columns
+    estimate = md("**Coefficient / Value**"),
+    std.error = md("**Std. Error**"),
+    statistic = md("**t-value**"),
+    p.value = md("**p-value**")
+  ) |>
+  fmt_number( #rounding
+    columns = c(estimate, std.error, statistic, p.value),
+    decimals = 3
+  ) |> #source note was in a lot of result examples i found so I added that as well 
+  tab_source_note(
+    source_note = md("**Note:** Many countries did not have accessible data for female leadership or GDP for some years, or did not have complete data at all.")
+  )
+
+gt_table
+```
+
+
+The results of the linear regression model on the relationship between female leadership and GDP show that there is no statistically significant association between the two variables. We decided to use GDP logged to reduce skewness that we saw in our original analysis through plotting. The model produced an F-statistic of 0.664 with a p-value of 0.416. Because this p-value is greater than 0.05, we fail to reject the null hypothesis and conclude that there is no evidence that countries with female leaders have different GDP levels compared to those without female leaders. 
+
+Although the estimated coefficient for female leadership is positive, and 5.38 for normal log which suggests higher GDP in countries with female leaders by over 500%, this result is not statistically significant and should be interpreted with caution. The large standard error & R squared indicates that the estimate varies greatly, and the model itself explains very little of the variation in GDP (R² = 0.002). This means that female leadership alone is not a meaningful predictor of economic GDP in this analysis. Additionally, a substantial number of observations were dropped due to missing data in both gender leadership and GDP, which may further limit the reliability and generalizability of these results.
+
+
+## Data Summaries
+
+### Research Question: GDP For Top Countries With Most Female Leaders Over Time
+
+```{r}
+top_10_female_leaders_gdp <- democracy_gdp |>
+  filter(!is.na(gdp)) |>
+  group_by(country_name, country_code) |>
+  summarize(
+    avg_gdp = mean(gdp),
+    n_female_leaders = sum(female_leader, na.rm = TRUE),
+    .groups = "drop"
+  ) |>
+  slice_max(n_female_leaders, n = 10, with_ties = FALSE)
+
+top_10_female_leaders_gdp
+#Table of Top Female Leaders with their GDP
+gt::gt(top_10_female_leaders_gdp) |>
+  cols_label(
+  country_name = "Country Name",
+  country_code = "Country Code",
+  avg_gdp = "Average GDP",
+  n_female_leaders ="Number of Female Leaders")|>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    ) |> tab_header(
+      title = md("Top Countries with Female Leaders Average GDP")
+    )
+
+```
+
+#This plot is a Visualization of the information in the table above.
+```{r}
+ggplot(top_10_female_leaders_gdp, aes(x = n_female_leaders, y = avg_gdp))+
+  geom_point(position = position_jitter(width = 0.2, seed = 123))+
+  geom_line(position = position_jitter(width = 0.2, seed = 123))+
+  labs(title = "Top Countries with Female Leaders Average GDP", 
+       x="Total Number of Female Leaders", 
+       y= "Average GDP")+
+  theme_minimal()
+```
+
+### #2 Research Question: Does the type of regime of a country/region affect the unemployment rate?
+```{r}
+#| label: visualization-to-answer-research question
+
+
+unemploy_data <- democracy_unemp |>
+  inner_join(gdp_df, by = c("country_code", "year"), relationship = "many-to-many") |>
+  filter( year == "2019",
+          !is.na(regime_category_index)) 
+
+ggplot(unemploy_data,
+       aes(x = regime_category, y = unemployment_rate)) +
+  geom_boxplot(fill = "#FF00FF", color = "#023FA5") +
+  labs(title = "Political Regime Type and Unemployment Rate Across Countries (2019)",
+       x = "Regime Category", 
+       y = "Unemployment Rate",
+       alt = "Boxplot showing the distribution of unemployment rates across six political regime types in 2019.") +
+  theme_minimal() +
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
+```
+#The boxplot above shows us that the unemployment rate looks pretty similar among different regime categories, with similar medians and IQR.
