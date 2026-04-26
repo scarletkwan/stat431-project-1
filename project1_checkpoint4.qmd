@@ -132,20 +132,6 @@ gt::gt(top_10_female_leaders_gdp) |>
       title = md("Top Countries with Female Leaders Average GDP")
     )
 
-
-ggplot(top_10_female_leaders_gdp, 
-       aes(x = n_female_leaders, y = log(avg_gdp))) +
-  geom_point(position = position_jitter(width = 0.2, seed = 123)) +
-  geom_smooth(method = "lm", se = TRUE, color = "#9AC0CD", fill="#E0FFFF") + 
-  labs(
-    title = "Top Countries with Female Leaders Average GDP",
-    x = "Total Number of Female Leaders",
-    y = "Log of Average GDP"
-  ) +
-  theme_minimal()
-
-
-
 ```
 
 #This plot is a Visualization of the information in the table above.
@@ -157,7 +143,17 @@ ggplot(top_10_female_leaders_gdp, aes(x = n_female_leaders, y = avg_gdp))+
        x="Total Number of Female Leaders", 
        y= "Average GDP")+
   theme_minimal()
+
+ggplot(top_10_female_leaders_gdp, aes(x = reorder(country_name, avg_gdp), group = 1)) + 
+  geom_ribbon(aes(ymin = 0, ymax = log(avg_gdp)), alpha = 0.3, fill="#9AC0CD") +
+  geom_line(aes(y = log(avg_gdp))) + geom_point(aes(y = log(avg_gdp))) + 
+  labs( title = "Top Countries with Female Leaders Average GDP", x = "Country", y = "Log of Average GDP", alt = "Line chart of countries ordered by average GDP, showing log-transformed GDP values with a shaded ribbon from zero to each value." ) + 
+  theme_minimal() + 
+  theme(axis.text.x = element_text(angle = 45, hjust = 1))
+
 ```
+
+
 
 
 
