@@ -1,0 +1,289 @@
+---
+title: "Final Deliverable"
+author: "Addie Weaver, Scarlet Kwan, Sophia Woodard"
+format:
+  html:
+    theme: flatly
+editor: source
+embed-resources: true
+code-tools: true
+code-fold: true
+execute: 
+  echo: true
+  warning: false
+  message: false
+---
+
+## Models
+
+```{r}
+#| message: false
+library(tidyverse)
+library(gt)
+library(broom)
+library(tibble)
+library(scales)
+gdp_df<- read_csv("gdp_df.csv")
+democracy_unemp <- read_csv("democracy_and_unemploy.csv")
+democracy_gdp <- read_csv("democracy_and_gdp.csv")
+
+```
+
+## Data Context
+
+
+
+
+### Dataset 1
+
+Our research questions took information from two main datasets. Our first dataset was created by two economics researchers who were studying different governments and how they change over time. The purpose of this dataset was to be a resource for those interested in studying how different countries and political systems transition through the years. Additionally, the two researchers, Christian Bjørnskov and Martin Rode, when doing their own research, felt that the data available at the time was inadequate.
+
+The dataset includes information on 192 different sovereign countries and 16 other self-governed territories from the years 1950 to 2020 on each of these countries’ regime type, democratic status, leadership, elections, transfers of power, and their colonial history.
+
+This dataset was an expansion on other collections of geopolitical data that the authors took and added more information to. The information included features of government, elections, leadership types, and more. When it came to our analysis for this data, it was incredibly helpful to have all this information because it gave us the ability to have an accurate list of all the sovereign countries and classify them into different categories based on regime, leader, and more. Additionally, it provided us with additional information that gave context to each of these countries.
+
+<<<<<<< HEAD
+[Source]{.underline}: https://www.christianbjoernskov.com/bjoernskovrodedata/
+=======
+https://www.christianbjoernskov.com/bjoernskovrodedata/
+>>>>>>> 59fb5e3e1afe4d6090d3279c852e50ad3d7129b7
+
+### GDP Data
+
+Our second dataset comes from API Ninjas and is an API with GDP data on all 192 sovereign countries. This data provided us with a wide range of GDP-related variables and information for each country. Some examples of this include GDP per country, GDP per country per capita, nominal GDP, and more. The observational unit was each country and year combination, the API provides current and historical GDP data for countries around the world. API Ninjas didn't explicitly state where they got their data from, so we don't have full transparency on where the data came from. These data are of interest to our first research question because GDP is one of the most used and recognized measures of national economic output. By linking GDP figures to the combined dataset, we are able to track how the economies of countries with more frequent female leadership have changed over time and see whether any  patterns or relationships exist between leadership and economic performance. For our research purposes, we focused on GDP per country in billions of United States dollars. Additionally, when extracting this data from the API to merge it with our geopolitical data, we used both the country name and code.
+
+
+
+### Unemployment data
+
+Our third dataset is from API Ninjas and is an API with unemployment data. This API provides data on the historical, current, and projected future unemployment statistics about every country in the world. This data can be retrieved through programming and can be queried by country name or ISO country code. The response variables in the data includes the country, the year of observation, and the unemployment rate in percentage form. The observational unit was each country and year combination. API Ninjas didn't explicitly state where they got their data from, so we don't have full transparency on where the data came from. The data was collected over multiple years and over a lot of countries to get the most in depth and detailed and informative data possible. A country’s unemployment rate is important because it shows how healthy its economy is, with low unemployment usually meaning people are working, earning money, and spending, which helps the economy grow, and high unemployment suggesting economic problems, with fewer jobs available and lower incomes. Different organizations like governments and businesses use this information on unemployment to make decisions about policies, hiring, and investments. By combining this unemployment dataset with our original one, we are able to answer questions regarding the relationship between a country's unemployment rate and their government or socio-economic characteristics, in this case whether the regime of the country affects the unemployment rate. 
+
+
+## Research Questions
+
+1)  How has Gross Domestic Project (GDP) changed for top countries with most female leaders over time?
+
+2)  Does the type of regime of a country/region affect the unemployment rate?
+
+## Data Summaries and Visualizations
+
+Research Question #1
+
+```{r}
+top_10_female_leaders_gdp <- democracy_gdp |>
+  filter(!is.na(gdp)) |>
+  group_by(country_name, country_code) |>
+  summarize(
+    years_with_female_leader = sum(female_leader, na.rm = TRUE),
+    avg_gdp = mean(gdp),
+    .groups = "drop"
+  ) |>
+  slice_max(years_with_female_leader, n = 10, with_ties = FALSE)
+
+#Table of Top Female Leaders with their GDP
+top_10_female_leaders_gdp|> 
+gt(caption =  "Table 1. Countries with the Most Years of Female National Leadership") |>
+  tab_header(
+    title = md("**Countries with the Most Years of Female National Leadership**"),
+    subtitle = "Based on country-years with available GDP data"
+  ) |>
+  cols_label(
+  country_name = "Country",
+    country_code = "Country Code",
+    years_with_female_leader = "Years with Female Leader",
+    avg_gdp = "Average GDP") |>
+  fmt_currency(avg_gdp, currency = "USD", decimals = 0) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+    )
+```
+
+```{r}
+summarize_country_gdp_change <- function(country) {
+  democracy_gdp |>
+    filter(country_name == country, !is.na(gdp)) |>
+    arrange(year) |>
+    summarize(
+      country_name = first(country_name),
+      first_year = first(year),
+      last_year = last(year),
+      first_gdp = first(gdp),
+      last_gdp = last(gdp),
+      gdp_change = last_gdp - first_gdp,
+      percent_change = gdp_change / first_gdp
+    )
+}
+
+gdp_change_table <- top_10_female_leaders_gdp$country_name |>
+  map_dfr(summarize_country_gdp_change)
+
+gdp_change_table |>
+  gt(caption = "Table 2. GDP Change Over Time for Countries with the Most Female Leadership") |>
+  tab_header(
+    title = md("**GDP Change Over Time for Countries with the Most Female Leadership**"),
+    subtitle = "First and last years of available GDP data by country"
+  ) |>
+  cols_label(
+    country_name = "Country",
+    first_year = "First Year",
+    last_year = "Last Year",
+    first_gdp = "First GDP",
+    last_gdp = "Last GDP",
+    gdp_change = "GDP Change",
+    percent_change = "Percent Change"
+  ) |>
+  fmt_currency(
+    columns = c(first_gdp, last_gdp, gdp_change),
+    currency = "USD",
+    decimals = 0
+  ) |>
+  fmt_percent(percent_change, decimals = 1) |>
+  tab_style(
+    style = cell_text(weight = "bold"),
+    locations = cells_column_labels()
+  ) |>
+  tab_style(
+    style = cell_fill(color = "#76B7B2"),
+    locations = cells_body(columns = percent_change)
+  )
+```
+
+```{r}
+ggplot(top_10_female_leaders_gdp, 
+       aes(x = years_with_female_leader, y = avg_gdp)) +
+  
+  geom_point(
+    color = "#4E79A7",
+    size = 3,
+    position = position_jitter(width = 0.2, seed = 123)
+  ) +
+  
+  geom_line(
+    color = "#76B7B2",
+    linewidth = 1,
+    position = position_jitter(width = 0.2, seed = 123)
+  ) +
+  
+  scale_y_log10(labels = scales::label_dollar(scale_cut = scales::cut_short_scale())) +
+  
+  labs(
+    title = "Average GDP and Years of Female Leadership Among Top Countries",
+    subtitle = "Each point represents a country with high female leadership representation",
+    x = "Number of Years with Female National Leadership",
+    y = "Average GDP (log scale)",
+    alt = "Scatter plot with a connecting line showing the relationship between years of female leadership and average GDP for the top countries. GDP is displayed on a logarithmic scale."
+  ) +
+  theme_minimal(base_size = 12) +
+  theme(
+    plot.title = element_text(face = "bold"),
+    plot.subtitle = element_text(size = 10),
+    axis.title = element_text(face = "bold")
+  )
+```
+
+```{r}
+ggplot(gdp_change_table, 
+       aes(y = reorder(country_name, last_gdp))) +
+  geom_segment(
+    aes(x = first_gdp, xend = last_gdp, yend = country_name), color = "gray50",linewidth = 1) +
+  # starting GDP point
+  geom_point(aes(x = first_gdp), color = "#4E79A7", size = 3) +
+  # ending GDP point
+  geom_point(aes(x = last_gdp), color = "#76B7B2", size = 3) +
+  scale_x_log10(labels = label_dollar()) +
+  labs(
+    title = "Change in GDP from First to Last Observation",
+    subtitle = "Countries with the Most Female Leadership",
+    x = "GDP (log scale)",
+    y = "Country",
+    alt = "Popsicle plot comparing first and last GDP values for countries with the most female leadership. Each country has two points connected by a line showing change over time."
+  ) +
+  
+  theme_minimal() +
+  theme(
+    plot.title = element_text(face = "bold")
+  )
+```
+
+## Data Model
+
+```{r}
+model_gdp_log <- lm(log(gdp) ~ female_leader, data = democracy_gdp)
+
+#When trying to professionally format my output for the model, I did some research into broom package & linear model output
+
+# https://broom.tidymodels.org/articles/broom.html & https://r-graph-gallery.com/366-regression-models-with-gtsummary.html 
+
+#below I used broom's tidy function for making tidy tibbles & broom's glance function to get additional terms from the output
+
+
+# getting the coeefficients, t-statitics, p-value, standard deviation and rounding them
+tidy_model <- tidy(model_gdp_log) |>
+  mutate(term = recode(term,
+      "(Intercept)" = "Intercept",
+      "female_leaderTRUE" = "Female Leader"),
+      estimate = round(estimate, 3),
+      std.error = round(std.error, 3),
+      statistic = round(statistic, 3),
+      p.value = round(p.value, 3),
+      section = "Coefficients") 
+
+# other results through glance
+g <- glance(model_gdp_log)
+
+#tibble of glanced values
+model_stats <- tibble(
+  section = "Model Fit",
+  term = c("R-squared", "Adjusted R-squared", "F-statistic", "Model p-value", "Observations"),
+  estimate = c(
+    round(g$r.squared, 3),
+    round(g$adj.r.squared, 3),
+    round(g$statistic, 3),
+    round(g$p.value, 3),
+    g$nobs
+  ), #setting NA values for this section of the output so its not misleading
+  std.error = NA,
+  statistic = NA,
+  p.value = NA
+)
+
+# Combining both parts
+table_data <- bind_rows(tidy_model, model_stats)
+
+# Building gt table
+gt_table <- table_data |>
+  gt(rowname_col = "term",
+    groupname_col = "section",
+    caption = "Effect of Female Leadership on Logged GDP"
+  ) |>
+  tab_header( #Headers
+    title = md("**Regression Results**"),
+    subtitle = "Response variable: log(GDP)"
+  ) |>
+  cols_label( #labeling columns
+    estimate = md("**Coefficient / Value**"),
+    std.error = md("**Std. Error**"),
+    statistic = md("**t-value**"),
+    p.value = md("**p-value**")
+  ) |>
+  fmt_number( #rounding
+    columns = c(estimate, std.error, statistic, p.value),
+    decimals = 3
+  ) |> #source note was in a lot of result examples i found so I added that as well 
+  tab_source_note(
+    source_note = md("**Note:** Many countries did not have accessible data for female leadership or GDP for some years, or did not have complete data at all.")
+  )
+
+gt_table
+```
+
+<<<<<<< HEAD
+The results of the linear regression model on the relationship between female leadership and GDP per country show that there is no statistically significant association between the two variables. We decided to use GDP logged to reduce skewness that we saw in our original analysis through plotting. The model produced an F-statistic of 0.664 with a p-value of 0.416. Because this p-value is greater than 0.05, we fail to reject the null hypothesis and conclude that there is no evidence that countries with female leaders have different GDP levels compared to those without female leaders.
+
+Although the estimated coefficient for female leadership is positive, and 5.38 for normal log which suggests higher GDP in countries with female leaders by over 500%, this result is not statistically significant and should be interpreted with caution. The large standard error & R squared indicates that the estimate varies greatly, and the model itself explains very little of the variation in GDP (R² = 0.002). This means that female leadership alone is not a meaningful predictor of economic GDP in this analysis. Additionally, a substantial number of observations were dropped due to missing data in both gender leadership and GDP, which may further limit the reliability and generalization of these results.
+=======
+The results of the linear regression model on the relationship between female leadership and GDP show that there is no statistically significant association between the two variables. We decided to use GDP logged to reduce skewness that we saw in our original analysis through plotting. The model produced an F-statistic of 0.664 with a p-value of 0.416. Because this p-value is greater than 0.05, we fail to reject the null hypothesis and conclude that there is no evidence that countries with female leaders have different GDP levels compared to those without female leaders.
+
+Although the estimated coefficient for female leadership is positive, and 5.38 for normal log which suggests higher GDP in countries with female leaders by over 500%, this result is not statistically significant and should be interpreted with caution. The large standard error & R squared indicates that the estimate varies greatly, and the model itself explains very little of the variation in GDP (R² = 0.002). This means that female leadership alone is not a meaningful predictor of economic GDP in this analysis. Additionally, a substantial number of observations were dropped due to missing data in both gender leadership and GDP, which may further limit the reliability and generalizability of these results.
+>>>>>>> 59fb5e3e1afe4d6090d3279c852e50ad3d7129b7
