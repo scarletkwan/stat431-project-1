@@ -210,6 +210,9 @@ ggplot(gdp_change_table,
   )
 ```
 
+According to the above tables and plots, regime type does not have a direct effect on unemployment rate. We also looked into the regime type with the highest change in unemployment rate to see if there was a hidden trend, which there wasn't. Therefore we conclude that regime type has no direct effect on enemployment rate.
+
+
 ## Data Model
 
 ```{r}
